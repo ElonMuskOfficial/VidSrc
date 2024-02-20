@@ -1,43 +1,49 @@
 import { useState } from "react";
 import data from "../../movie.json";
 import { debounce } from "lodash";
+import loader from '../assets/loader.svg'
 
-const handleSearch = debounce((term, setSearchResults) => {
-  if (term === "") {
+const handleSearch = debounce((term, setSearchResults, setDebounceTerm, setLoading) => {
+  if (term.trim() === "") {
     setSearchResults([]);
+    setDebounceTerm("");
+    setLoading(false)
     return;
   }
+  setDebounceTerm(term)
   const results = data.filter((item) =>
-    item.title.toLowerCase().includes(term.toLowerCase())
+    item.title.toLowerCase().includes(term.toLowerCase()) || item.tmdb_id === parseInt(term)
   );
   setSearchResults(results);
+  setLoading(false)
 }, 300);
 
 const Search = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [debounceTerm, setDebounceTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [displayedResults, setDisplayedResults] = useState(18);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    const term = e.target.value.trim();
-    console.log(term);
+    const term = e.target.value
     setSearchTerm(term);
-    handleSearch(term, setSearchResults);
+    setLoading(true)
+    handleSearch(term, setSearchResults, setDebounceTerm, setLoading);
   };
 
   const handleLoadMore = () => {
-    // Increment the number of displayed results
     setDisplayedResults((prev) => prev + 10);
-    const lastResult = document.querySelector(".search-result:last-child");
-    if (lastResult) {
-      lastResult.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
   };
 
   return (
     <div className="container mx-auto max-w-5xl dark:bg-slate-900/40 h-screen">
-      <div className="relative md:px-24 px-4 pt-5">
-        <div className="text-3xl font-bold text-white/70 pb-2 uppercase text-center">Search movies by name.</div>
+      <div className="relative md:px-24 px-4 pt-4">
+        <div className="text-4xl font-extrabold pb-4 text-center">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-violet-500">
+            Watch Movies Online Free
+          </span>
+        </div>
         <div className="group relative rounded-md dark:bg-slate-700 dark:highlight-white/10 dark:focus-within:bg-transparent">
           <svg
             width="20"
@@ -54,13 +60,20 @@ const Search = () => {
           <input
             type="text"
             aria-label="Search..."
-            placeholder="Search..."
+            placeholder="Search movie by name or TMDB ID..."
             className="appearance-none w-full text-sm leading-6 bg-transparent text-slate-900 placeholder:text-slate-400 rounded-md py-2 pl-10 ring-1 border-slate-100/5 ring-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-slate-100 dark:placeholder:text-slate-500 dark:ring-0 dark:focus:ring-2"
             value={searchTerm}
             onChange={handleChange}
           />
+          {loading && (
+            <div className="mx-auto h-6 w-6 absolute right-3 top-1/2 -translate-y-1/2 ">
+              <img src={loader} alt="loader" className="h-full w-full" />
+            </div>
+          )}
         </div>
-
+        {searchResults.length === 0 && debounceTerm && !loading && (
+          <p className="text-white text-center mt-2">No results found</p>
+        )}
         {searchResults.length > 0 && (
           <div className="dark:bg-slate-800 rounded-md mt-2 shadow overflow-hidden">
             <ul className="max-h-96 overflow-auto p-2 divide-y divide-slate-100/5">
@@ -87,6 +100,5 @@ const Search = () => {
       </div>
     </div>
   );
-};
-
-export default Search;
+}
+export default Search
